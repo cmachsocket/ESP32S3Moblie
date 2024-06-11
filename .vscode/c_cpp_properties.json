@@ -11,7 +11,10 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/home/cmach_socket/Arduino/libraries/**",
-                "/home/cmach_socket/.arduino15/**"
+                "/home/cmach_socket/.arduino15/**",
+                "/home/cmach_socket/.arduino15/packages/esp32/hardware/esp32/2.0.14/tools/sdk/esp32s3/include/hal/esp32s3/include",
+                "/home/cmach_socket/.arduino15/packages/esp32/hardware/esp32/2.0.14/tools/sdk/esp32s3/include/hal/include",
+                "/home/cmach_socket/.arduino15/packages/esp32/hardware/esp32/2.0.14/tools/sdk/esp32s3/include/hal/platform_port/include"
             ],
             "forcedInclude": [],
             "cStandard": "${default}",

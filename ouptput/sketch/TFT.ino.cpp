@@ -43,6 +43,63 @@ time_t tmp_time;
 Preferences prefs;
 char ptw[200]="";
 String wre="",hitoreceive="",files[20];
+#line 44 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void setup();
+#line 111 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void loop();
+#line 222 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void isr();
+#line 229 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void winchange();
+#line 235 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void pagechage();
+#line 243 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void tempininit();
+#line 251 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void sdinit();
+#line 261 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+bool timeinit();
+#line 270 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void bmeinit();
+#line 281 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+int wificonnect();
+#line 305 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void wifidis();
+#line 314 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void gethito();
+#line 325 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void setweather();
+#line 363 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void get_time();
+#line 370 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void get_tp();
+#line 380 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void get_files();
+#line 392 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void window1();
+#line 404 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void window2();
+#line 421 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void window3();
+#line 428 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void window4();
+#line 453 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win1();
+#line 458 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win2();
+#line 478 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win3();
+#line 483 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win4();
+#line 504 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void disply();
+#line 542 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void showImage(int32_t x, int32_t y, int32_t w, int32_t h, const uint16_t *data);
+#line 593 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void drawSdJpeg(const char *filename, int xpos, int ypos);
+#line 627 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void jpegRender(int xpos, int ypos);
+#line 44 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void setup() {
   Wire.begin(16,17);
   Serial.begin(115200);

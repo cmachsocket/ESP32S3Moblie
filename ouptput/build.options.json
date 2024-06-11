@@ -1,0 +1,11 @@
+{
+  "additionalFiles": "../../..,../../..,../../..,../../..,../../..,../..,../..,../..,../../..,../../..,../../..,../../../..,../../../../..,../../../../..,../../../../..,../../../../..,../../../../..,../../../..,../../../..,../../../..,../../../..,../../../..,../../../..,../..,../..",
+  "builtInToolsFolders": "",
+  "compiler.optimization_flags": "-Os",
+  "customBuildProperties": "",
+  "fqbn": "esp32:esp32:esp32s3:JTAGAdapter=default,PSRAM=enabled,FlashMode=qio,FlashSize=16M,LoopCore=1,EventsCore=1,USBMode=default,CDCOnBoot=cdc,MSCOnBoot=default,DFUOnBoot=default,UploadMode=cdc,PartitionScheme=huge_app,CPUFreq=80,UploadSpeed=921600,DebugLevel=debug,EraseFlash=none",
+  "hardwareFolders": "/home/cmach_socket/.arduino15/packages",
+  "otherLibrariesFolders": "/home/cmach_socket/Arduino/libraries",
+  "runtime.ide.version": "10607",
+  "sketchLocation": "/home/cmach_socket/Arduino/TFT"
+}

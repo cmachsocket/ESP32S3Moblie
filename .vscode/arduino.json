@@ -4,5 +4,5 @@
     "programmer": "esptool",
     "port": "/dev/ttyACM0",
     "sketch": "TFT.ino",
-    "output": "./ouptput"
+    "output": "./output"
 }

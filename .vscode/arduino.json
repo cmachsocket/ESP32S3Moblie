@@ -4,5 +4,5 @@
     "programmer": "esptool",
     "port": "/dev/ttyACM0",
     "sketch": "TFT.ino",
-    "output": "./output"
+    "output": "/home/cmach_socket/Arduino/output"
 }

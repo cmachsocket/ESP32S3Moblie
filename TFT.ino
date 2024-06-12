@@ -29,10 +29,10 @@ RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int FLAG=0,lat=0,wific=0,turnoff=0,backlight=10;
 File txtfile,bookmark;
 XFont *_xFont;
-bool F=0,iswifi=0,nextpage=0,lastpage=0;
+bool F=0,iswifi=0,nextpage=0,lastpage=0,thefirstenter=0;
 float it=0,tp=0,pre=0,hu=0,gas=0,hi=0;
-int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0;
-uint32_t lastpos=0;
+int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0;
+uint32_t lastpos=0,llpos=0;
 bool wincht,pagecht;
 Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
@@ -138,12 +138,13 @@ void loop() {
         if(!enterbook){
           txtfile=SD.open("/books/"+files[bookchose]);
           bookmark=SD.open("/bookmark/"+files[bookchose]);
-          lastpos = bookmark.read()<<24;
-          lastpos += (bookmark.read()<<16);
-          lastpos += (bookmark.read()<<8);
-          lastpos += bookmark.read();
+          llpos = bookmark.read()<<24;
+          llpos += (bookmark.read()<<16);
+          llpos += (bookmark.read()<<8);
+          llpos += bookmark.read();
           bookmark.close();
           enterbook=1;
+          thefirstenter=1;
         }
         nextpage=1;
       }
@@ -156,6 +157,9 @@ void loop() {
         }
         else if(choseset==1){
           turnoff=(turnoff+1)%5;
+        }
+        else if(choseset==2){
+          esp_restart();
         }
       }
     }
@@ -178,7 +182,7 @@ void loop() {
         else lastpage=1;
       }
       else if(chosewin4==3){
-        choseset=(choseset+1)%2;
+        choseset=(choseset+1)%3;
       }
       
     }
@@ -478,9 +482,9 @@ void win4win1(){
   drawSdJpeg(FileName, 0, 0);     // This draws a jpeg pulled off the SD Card
 }
 void win4win2(){
-  tft.fillScreen(0xf7bb);
-  tft.setTextColor(TFT_BLACK);
   if(!enterbook){
+    tft.fillScreen(0xf7bb);
+    tft.setTextColor(TFT_BLACK);
     if(!filecnt)get_files();
     for(int i=0;i<filecnt;i++){
       _xFont->DrawStr2(10,i*20+10,files[i],TFT_BLACK);
@@ -492,15 +496,26 @@ void win4win2(){
   if(!nextpage and !lastpage){
     return;
   }
-  if(lastpage){
-    txtfile.seek(max((unsigned)(0),lastpos));
+  tft.fillScreen(0xf7bb);
+  tft.setTextColor(TFT_BLACK);
+  if(thefirstenter){
+    tft.setCursor(10,50,2);
+    tft.print("wincht : from head \n pagecht : from mark");
+    thefirstenter=0;
+    return;
   }
+  if(lastpage){
+    txtfile.seek(max((unsigned)(0),llpos));
+  }
+  llpos=lastpos;
   lastpos=txtfile.position();
   _xFont->DrawStrSelf(txtfile,TFT_BLACK);
+  tft.setCursor(10,220,2);
+  tft.print(pt3);
   tft.setCursor(70,220,2);
   tft.print(txtfile.position()/(float)txtfile.size()*100);
   tft.print("%");
-  
+  lastpage=nextpage=0;
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);
@@ -522,6 +537,10 @@ void win4win4(){
   tft.println("turnoff");
   tft.setCursor(90,30,2);
   tft.println(turnoff*60+30);
+
+  tft.setCursor(10,50,2);
+  tft.setTextSize(1);
+  tft.println("restart");
 
   tft.setCursor(2,choseset*20+10,2);
   tft.print("*");

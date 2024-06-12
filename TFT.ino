@@ -11,11 +11,11 @@
 #include <WiFi.h>
 #include<ArduinoJson.h>
 #include<Preferences.h>
-#include <Adafruit_BME680.h>
+#include "bsec.h"
 #include <SD.h>
 #include <FS.h>
 #include <JPEGDecoder.h>
-Adafruit_BME680 bme; // I2C
+Bsec iaqSensor;
 struct Button {
     const uint8_t PIN;
     uint32_t numberKeyPresses;
@@ -26,14 +26,14 @@ SPIClass sdSPI;
 char pt1[20],pt2[20],pt3[20];
 RTC_DATA_ATTR unsigned long change=0,changeTime=0;
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR int FLAG=0,lat=0,wific=0,turnoff=0,backlight=10;
+RTC_DATA_ATTR int FLAG=0,lat=0,wific=0,turnoff=1,backlight=10;
 File txtfile,bookmark;
 XFont *_xFont;
 bool F=0,iswifi=0,nextpage=0,lastpage=0,thefirstenter=0;
-float it=0,tp=0,pre=0,hu=0,gas=0,hi=0;
+float it=0,tp=0,pre=0,hu=0,gas=0,hi=0,co2=0,iaq=0;
 int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0;
 uint32_t lastpos=0,llpos=0;
-bool wincht,pagecht;
+bool wincht,pagecht,isiaq;
 Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "ntp1.aliyun.com",60*60*8, 30*60*1000);
@@ -107,18 +107,19 @@ void setup() {
 }
 void loop() {
   // put your main code here, to run repeatedly:
-  
+  if(iaqSensor.run()){
+    get_tp();
+  }
   if (millis() - changeTime > 10000) {
     changeTime = millis();
     get_time();
     if(tmp->tm_min!=lat){
       lat=tmp->tm_min;
-      get_tp();
       disply();
     }
 
   }
-  if (millis()-change > (turnoff*60+30)*1000 and !enterbook) {
+  if (turnoff and !enterbook and millis()-change > (turnoff*60)*1000 ) {
     Serial.println("Going to sleep now");
     prefs.putUInt("time",time(0));
     //tft.fillScreen(TFT_BLACK);
@@ -285,12 +286,24 @@ bool timeinit(){
   return 0;
 }
 void bmeinit(){
-  bme.begin();
-  bme.setTemperatureOversampling(BME680_OS_8X);
-  bme.setHumidityOversampling(BME680_OS_2X);
-  bme.setPressureOversampling(BME680_OS_4X);
-  bme.setIIRFilterSize(BME680_FILTER_SIZE_3);
-  bme.setGasHeater(320, 150); // 320*C for 150 ms
+  iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);
+  checkIaqSensorStatus();
+  bsec_virtual_sensor_t sensorList[13] = {
+    BSEC_OUTPUT_IAQ,
+    BSEC_OUTPUT_STATIC_IAQ,
+    BSEC_OUTPUT_CO2_EQUIVALENT,
+    BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
+    BSEC_OUTPUT_RAW_TEMPERATURE,
+    BSEC_OUTPUT_RAW_PRESSURE,
+    BSEC_OUTPUT_RAW_HUMIDITY,
+    BSEC_OUTPUT_RAW_GAS,
+    BSEC_OUTPUT_STABILIZATION_STATUS,
+    BSEC_OUTPUT_RUN_IN_STATUS,
+    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
+    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
+    BSEC_OUTPUT_GAS_PERCENTAGE
+  };
+  iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
 }
 //init
 
@@ -389,12 +402,16 @@ inline void get_time() {
 inline void get_tp(){
   temp_sensor_read_celsius(&it);
   Serial.println(it);
-  bme.performReading();
-  tp=bme.temperature;
-  pre=bme.pressure/100.0;
-  hu=bme.humidity;
-  gas=bme.gas_resistance/1000.0;
-  hi=bme.readAltitude(SEALEVELPRESSURE_HPA);
+  tp=iaqSensor.temperature;
+  pre=iaqSensor.pressure/100.0;
+  hu=iaqSensor.humidity;
+  gas=iaqSensor.gasPercentage;
+  co2=iaqSensor.co2Equivalent;
+  isiaq=iaqSensor.iaqAccuracy;
+  hi=calAltitude(pre,tp);
+}
+inline float calAltitude(float atmospheric , float temprature){
+ return  (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903))*(temprature+273.15)/0.0065;
 }
 inline void get_files(){
   File root = SD.open("/books");
@@ -440,9 +457,9 @@ void window2(){
   tft.setTextSize(1);
   tft.println(pt3);
 
-  tft.setCursor(3,190,2);
+  tft.setCursor(3,170,2);
   tft.setTextSize(1);
-  tft.printf("iT:%d*C sT:%.2f*C W:%d%% H:%dm G:%dKOhms P:%dhPa",int(it),tp,int(hu),int(hi),int(gas),int(pre));
+  tft.printf("iT:%d*C sT:%.2f*C W:%d%% I:%d H:%dm G:%d%% P:%dhPa C:%dppm",int(it),tp,int(hu),int(isiaq? iaq : 0 ),int(hi),int(gas),int(pre),int(co2));
 }
 void window3(){
   showImage(0, 0, 135, 240, gp3);
@@ -487,7 +504,7 @@ void win4win2(){
     tft.setTextColor(TFT_BLACK);
     if(!filecnt)get_files();
     for(int i=0;i<filecnt;i++){
-      _xFont->DrawStr2(10,i*20+10,files[i],TFT_BLACK);
+      _xFont->DrawStr(10,i*20+10,files[i],TFT_BLACK);
     }
     tft.setCursor(2,bookchose*20+10,2);
     tft.print("*");
@@ -519,7 +536,7 @@ void win4win2(){
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);
-  _xFont->DrawStr2(2, 10, hitoreceive, 0);
+  _xFont->DrawStr(2, 10, hitoreceive, 0);
   
 }
 void win4win4(){
@@ -536,8 +553,8 @@ void win4win4(){
   tft.setTextSize(1);
   tft.println("turnoff");
   tft.setCursor(90,30,2);
-  tft.println(turnoff*60+30);
-
+  tft.println(turnoff*60);
+  
   tft.setCursor(10,50,2);
   tft.setTextSize(1);
   tft.println("restart");
@@ -746,4 +763,31 @@ void jpegRender(int xpos, int ypos) {
   tft.setSwapBytes(swapBytes);
  
   
+}
+void checkIaqSensorStatus(void)
+{
+  String output;
+  if (iaqSensor.bsecStatus != BSEC_OK) {
+    if (iaqSensor.bsecStatus < BSEC_OK) {
+      output = "BSEC error code : " + String(iaqSensor.bsecStatus);
+      Serial.println(output);
+      for (;;);
+        //errLeds(); /* Halt in case of failure */
+    } else {
+      output = "BSEC warning code : " + String(iaqSensor.bsecStatus);
+      Serial.println(output);
+    }
+  }
+
+  if (iaqSensor.bme68xStatus != BME68X_OK) {
+    if (iaqSensor.bme68xStatus < BME68X_OK) {
+      output = "BME68X error code : " + String(iaqSensor.bme68xStatus);
+      Serial.println(output);
+      for (;;);
+        //errLeds(); /* Halt in case of failure */
+    } else {
+      output = "BME68X warning code : " + String(iaqSensor.bme68xStatus);
+      Serial.println(output);
+    }
+  }
 }

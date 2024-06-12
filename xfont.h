@@ -35,10 +35,11 @@ public:
     TFT_eSPI tft = TFT_eSPI();
 #endif
 
-    void DrawStr2(int x, int y, String str, int fontColor);
-    void DrawStr2(int x, int y, String str, int fontColor,int backColor);
+    void DrawStr(int x, int y, String str, int fontColor);
+    void DrawStr(int x, int y, String str, int fontColor,int backColor);
     void DrawStrEx(int x, int y, String str, int fontColor);
     void DrawStrEx(int x, int y, String str, int fontColor,int backColor);
+    void DrawStrFromUtf16(int x, int y,const uint16_t * str, int fontColor,int backColor, size_t length);
     void DrawStrSelf(File txtfile,int fontColor);
     // 在指定位置输出中文，本方法边读字库边显示
     void DrawChinese(int x, int y, String str, int fontColor);
@@ -64,10 +65,6 @@ protected:
     String getUnicodeFromUTF8(String s);
     // 从字符的像素16进制字符重新转成二进制字符串
     String getPixDataFromHex(String s);
-
-    
-    // 在屏幕上输出字符，暂时保留这个方法
-    void DrawStr(int x, int y, String str, int color);
 
     // 初始化字库
     void initZhiku(String fontPath);

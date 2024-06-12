@@ -90,17 +90,17 @@ void window4();
 void win4win1();
 #line 480 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void win4win2();
-#line 504 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 505 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void win4win3();
-#line 509 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 510 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void win4win4();
-#line 530 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 531 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void disply();
-#line 568 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 569 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void showImage(int32_t x, int32_t y, int32_t w, int32_t h, const uint16_t *data);
-#line 619 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 620 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void drawSdJpeg(const char *filename, int xpos, int ypos);
-#line 653 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 654 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void jpegRender(int xpos, int ypos);
 #line 45 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void setup() {
@@ -556,11 +556,12 @@ void win4win2(){
   if(lastpage){
     txtfile.seek(max((unsigned)(0),lastpos));
   }
+  lastpos=txtfile.position();
   _xFont->DrawStrSelf(txtfile,TFT_BLACK);
   tft.setCursor(70,220,2);
   tft.print(txtfile.position()/(float)txtfile.size()*100);
   tft.print("%");
-  lastpos=txtfile.position();
+  
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);

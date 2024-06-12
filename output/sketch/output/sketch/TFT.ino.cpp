@@ -498,11 +498,12 @@ void win4win2(){
   if(lastpage){
     txtfile.seek(max((unsigned)(0),lastpos));
   }
+  lastpos=txtfile.position();
   _xFont->DrawStrSelf(txtfile,TFT_BLACK);
   tft.setCursor(70,220,2);
   tft.print(txtfile.position()/(float)txtfile.size()*100);
   tft.print("%");
-  lastpos=txtfile.position();
+  
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);

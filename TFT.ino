@@ -31,9 +31,9 @@ File txtfile,bookmark;
 XFont *_xFont;
 bool F=0,iswifi=0,nextpage=0,lastpage=0,thefirstenter=0;
 float it=0,tp=0,pre=0,hu=0,gas=0,hi=0,co2=0,iaq=0;
-int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0;
+int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0,isiaq=0;
 uint32_t lastpos=0,llpos=0;
-bool wincht,pagecht,isiaq;
+bool wincht,pagecht;
 Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "ntp1.aliyun.com",60*60*8, 30*60*1000);
@@ -408,6 +408,7 @@ inline void get_tp(){
   gas=iaqSensor.gasPercentage;
   co2=iaqSensor.co2Equivalent;
   isiaq=iaqSensor.iaqAccuracy;
+  iaq=iaqSensor.iaq;
   hi=calAltitude(pre,tp);
 }
 inline float calAltitude(float atmospheric , float temprature){
@@ -459,7 +460,7 @@ void window2(){
 
   tft.setCursor(3,170,2);
   tft.setTextSize(1);
-  tft.printf("iT:%d*C sT:%.2f*C W:%d%% I:%d H:%dm G:%d%% P:%dhPa C:%dppm",int(it),tp,int(hu),int(isiaq? iaq : 0 ),int(hi),int(gas),int(pre),int(co2));
+  tft.printf("iT:%d*C sT:%.2f*C W:%d%% I:%d H:%dm G:%d%% P:%dhPa C:%dppm",int(it),tp,int(hu),int(isiaq ? iaq : 0 ),int(hi),int(gas),int(pre),int(co2));
 }
 void window3(){
   showImage(0, 0, 135, 240, gp3);

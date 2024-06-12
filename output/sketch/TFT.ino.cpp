@@ -29,11 +29,12 @@ char pt1[20],pt2[20],pt3[20];
 RTC_DATA_ATTR unsigned long change=0,changeTime=0;
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR int FLAG=0,lat=0,wific=0,turnoff=0,backlight=10;
-File txtfile;
+File txtfile,bookmark;
 XFont *_xFont;
-bool F=0,iswifi=0,nextpage=0;
+bool F=0,iswifi=0,nextpage=0,lastpage=0;
 float it=0,tp=0,pre=0,hu=0,gas=0,hi=0;
 int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0;
+uint32_t lastpos=0;
 bool wincht,pagecht;
 Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
@@ -43,71 +44,69 @@ time_t tmp_time;
 Preferences prefs;
 char ptw[200]="";
 String wre="",hitoreceive="",files[20];
-#line 44 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 45 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void setup();
-#line 111 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 108 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void loop();
-#line 222 "/home/cmach_socket/Arduino/TFT/TFT.ino"
-void isr();
-#line 229 "/home/cmach_socket/Arduino/TFT/TFT.ino"
-void winchange();
 #line 235 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void isr();
+#line 242 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void winchange();
+#line 248 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void pagechage();
-#line 243 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 256 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void tempininit();
-#line 251 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 264 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void sdinit();
-#line 261 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 274 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 bool timeinit();
-#line 270 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 283 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void bmeinit();
-#line 281 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 294 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 int wificonnect();
-#line 305 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 319 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void wifidis();
-#line 314 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 329 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void gethito();
-#line 325 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 340 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void setweather();
-#line 363 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 378 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void get_time();
-#line 370 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 385 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void get_tp();
-#line 380 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 395 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void get_files();
-#line 392 "/home/cmach_socket/Arduino/TFT/TFT.ino"
-void window1();
 #line 404 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void get_fre(int mhz);
+#line 414 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void window1();
+#line 426 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void window2();
-#line 421 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 443 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void window3();
-#line 428 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 450 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void window4();
-#line 453 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 475 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void win4win1();
-#line 458 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 480 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void win4win2();
-#line 478 "/home/cmach_socket/Arduino/TFT/TFT.ino"
-void win4win3();
-#line 483 "/home/cmach_socket/Arduino/TFT/TFT.ino"
-void win4win4();
 #line 504 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win3();
+#line 509 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+void win4win4();
+#line 530 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void disply();
-#line 542 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 568 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void showImage(int32_t x, int32_t y, int32_t w, int32_t h, const uint16_t *data);
-#line 593 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 619 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void drawSdJpeg(const char *filename, int xpos, int ypos);
-#line 627 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 653 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void jpegRender(int xpos, int ypos);
-#line 44 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+#line 45 "/home/cmach_socket/Arduino/TFT/TFT.ino"
 void setup() {
   Wire.begin(16,17);
   Serial.begin(115200);
-  esp_pm_config_esp32s3_t pmConfig;
-  pmConfig.max_freq_mhz = 80;  // 最大工作频率（MHz）
-  pmConfig.min_freq_mhz = 20;  // 最小工作频率（MHz）
-  pmConfig.light_sleep_enable = true;  // 启用轻度睡眠模式
-  esp_pm_configure(&pmConfig);
+  
   tmp=new(tm);
   pinMode(button2.PIN, INPUT_PULLUP);
   attachInterrupt(button2.PIN, isr, FALLING);
@@ -199,6 +198,12 @@ void loop() {
       else if(chosewin4==1){
         if(!enterbook){
           txtfile=SD.open("/books/"+files[bookchose]);
+          bookmark=SD.open("/bookmark/"+files[bookchose]);
+          lastpos = bookmark.read()<<24;
+          lastpos += (bookmark.read()<<16);
+          lastpos += (bookmark.read()<<8);
+          lastpos += bookmark.read();
+          bookmark.close();
           enterbook=1;
         }
         nextpage=1;
@@ -231,10 +236,12 @@ void loop() {
       }
       else if(chosewin4==1){
         if(!enterbook)bookchose=(bookchose+1)%filecnt;
+        else lastpage=1;
       }
       else if(chosewin4==3){
         choseset=(choseset+1)%2;
       }
+      
     }
     else{
       if(!FLAG){
@@ -268,7 +275,15 @@ void loop() {
     }
     else if(FLAG==3){
       enterwin4=enterwin4^1;
-      enterbook=filecnt=0;
+      if(enterbook){
+        bookmark = SD.open("/bookmark/"+files[bookchose],FILE_WRITE);
+        bookmark.write((lastpos>>24)&0xFF);
+        bookmark.write((lastpos>>16)&0xFF);
+        bookmark.write((lastpos>>8)&0xFF);
+        bookmark.write((lastpos)&0xFF);
+        bookmark.close();
+        enterbook=filecnt=0;
+      }
       disply();
     }
     change=millis();
@@ -340,6 +355,7 @@ void bmeinit(){
 int wificonnect(){
   tft.println("start connect");
   Serial.println(wific);
+  get_fre(80);
   if(wific==1){
     WiFi.begin(id1,psw1);
   }
@@ -364,6 +380,7 @@ int wificonnect(){
 void wifidis(){
   WiFi.disconnect(true);
   WiFi.mode(WIFI_OFF);
+  get_fre(20);
   //digitalWrite(13,LOW);
   iswifi=0;
 }
@@ -444,6 +461,13 @@ inline void get_files(){
     file = root.openNextFile();
     filecnt++;
   }
+}
+inline void get_fre(int mhz){
+  esp_pm_config_esp32s3_t pmConfig;
+  pmConfig.max_freq_mhz = mhz;  // 最大工作频率（MHz）
+  pmConfig.min_freq_mhz = mhz;  // 最小工作频率（MHz）
+  pmConfig.light_sleep_enable = false;  // 启用轻度睡眠模式
+  esp_pm_configure(&pmConfig);
 }
 //gets
 
@@ -526,13 +550,17 @@ void win4win2(){
     tft.print("*");
     return;
   }
-  if(!nextpage){
+  if(!nextpage and !lastpage){
     return;
+  }
+  if(lastpage){
+    txtfile.seek(max((unsigned)(0),lastpos));
   }
   _xFont->DrawStrSelf(txtfile,TFT_BLACK);
   tft.setCursor(70,220,2);
   tft.print(txtfile.position()/(float)txtfile.size()*100);
   tft.print("%");
+  lastpos=txtfile.position();
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);

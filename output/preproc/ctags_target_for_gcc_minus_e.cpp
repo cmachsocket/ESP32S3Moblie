@@ -28,11 +28,12 @@ char pt1[20],pt2[20],pt3[20];
 __attribute__((section(".rtc.data" "." "28"))) unsigned long change=0,changeTime=0;
 __attribute__((section(".rtc.data" "." "29"))) int bootCount = 0;
 __attribute__((section(".rtc.data" "." "30"))) int FLAG=0,lat=0,wific=0,turnoff=0,backlight=10;
-File txtfile;
+File txtfile,bookmark;
 XFont *_xFont;
-bool F=0,iswifi=0,nextpage=0;
+bool F=0,iswifi=0,nextpage=0,lastpage=0;
 float it=0,tp=0,pre=0,hu=0,gas=0,hi=0;
 int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0;
+uint32_t lastpos=0;
 bool wincht,pagecht;
 Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
@@ -45,11 +46,7 @@ String wre="",hitoreceive="",files[20];
 void setup() {
   Wire.begin(16,17);
   Serial.begin(115200);
-  esp_pm_config_esp32s3_t pmConfig;
-  pmConfig.max_freq_mhz = 80; // 最大工作频率（MHz）
-  pmConfig.min_freq_mhz = 20; // 最小工作频率（MHz）
-  pmConfig.light_sleep_enable = true; // 启用轻度睡眠模式
-  esp_pm_configure(&pmConfig);
+
   tmp=new(tm);
   pinMode(button2.PIN, 0x05);
   attachInterrupt(button2.PIN, isr, 0x02);
@@ -82,9 +79,9 @@ void setup() {
         if(t5k==4){
           timeval tmpt=(timeval){prefs.getUInt("time"),0};
           settimeofday(&tmpt,
-# 83 "/home/cmach_socket/Arduino/TFT/TFT.ino" 3 4
+# 80 "/home/cmach_socket/Arduino/TFT/TFT.ino" 3 4
                             __null
-# 83 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+# 80 "/home/cmach_socket/Arduino/TFT/TFT.ino"
                                 );
           break;
         }
@@ -145,6 +142,12 @@ void loop() {
       else if(chosewin4==1){
         if(!enterbook){
           txtfile=SD.open("/books/"+files[bookchose]);
+          bookmark=SD.open("/bookmark/"+files[bookchose]);
+          lastpos = bookmark.read()<<24;
+          lastpos += (bookmark.read()<<16);
+          lastpos += (bookmark.read()<<8);
+          lastpos += bookmark.read();
+          bookmark.close();
           enterbook=1;
         }
         nextpage=1;
@@ -177,10 +180,12 @@ void loop() {
       }
       else if(chosewin4==1){
         if(!enterbook)bookchose=(bookchose+1)%filecnt;
+        else lastpage=1;
       }
       else if(chosewin4==3){
         choseset=(choseset+1)%2;
       }
+
     }
     else{
       if(!FLAG){
@@ -214,7 +219,15 @@ void loop() {
     }
     else if(FLAG==3){
       enterwin4=enterwin4^1;
-      enterbook=filecnt=0;
+      if(enterbook){
+        bookmark = SD.open("/bookmark/"+files[bookchose],"w");
+        bookmark.write((lastpos>>24)&0xFF);
+        bookmark.write((lastpos>>16)&0xFF);
+        bookmark.write((lastpos>>8)&0xFF);
+        bookmark.write((lastpos)&0xFF);
+        bookmark.close();
+        enterbook=filecnt=0;
+      }
       disply();
     }
     change=millis();
@@ -270,9 +283,9 @@ bool timeinit(){
   }
   timeval tmpt=(timeval){timeClient.getEpochTime(),0};
   settimeofday(&tmpt,
-# 267 "/home/cmach_socket/Arduino/TFT/TFT.ino" 3 4
+# 280 "/home/cmach_socket/Arduino/TFT/TFT.ino" 3 4
                     __null
-# 267 "/home/cmach_socket/Arduino/TFT/TFT.ino"
+# 280 "/home/cmach_socket/Arduino/TFT/TFT.ino"
                         );
   return 0;
 }
@@ -290,6 +303,7 @@ void bmeinit(){
 int wificonnect(){
   tft.println("start connect");
   Serial.println(wific);
+  get_fre(80);
   if(wific==1){
     WiFi.begin(id1,psw1);
   }
@@ -314,6 +328,7 @@ int wificonnect(){
 void wifidis(){
   WiFi.disconnect(true);
   WiFi.mode(WIFI_MODE_NULL);
+  get_fre(20);
   //digitalWrite(13,LOW);
   iswifi=0;
 }
@@ -394,6 +409,13 @@ inline void get_files(){
     file = root.openNextFile();
     filecnt++;
   }
+}
+inline void get_fre(int mhz){
+  esp_pm_config_esp32s3_t pmConfig;
+  pmConfig.max_freq_mhz = mhz; // 最大工作频率（MHz）
+  pmConfig.min_freq_mhz = mhz; // 最小工作频率（MHz）
+  pmConfig.light_sleep_enable = false; // 启用轻度睡眠模式
+  esp_pm_configure(&pmConfig);
 }
 //gets
 
@@ -476,13 +498,17 @@ void win4win2(){
     tft.print("*");
     return;
   }
-  if(!nextpage){
+  if(!nextpage and !lastpage){
     return;
+  }
+  if(lastpage){
+    txtfile.seek(max((unsigned)(0),lastpos));
   }
   _xFont->DrawStrSelf(txtfile,0x0000 /*   0,   0,   0 */);
   tft.setCursor(70,220,2);
   tft.print(txtfile.position()/(float)txtfile.size()*100);
   tft.print("%");
+  lastpos=txtfile.position();
 }
 void win4win3(){
    showImage(0, 0, 135, 240, gp3);

@@ -1,9 +1,13 @@
-#define THRESHOLD 4000
+#define THRESHOLD 40
 #define SEALEVELPRESSURE_HPA (1013.25)
-#define SD_MISO     37
-#define SD_MOSI     35
-#define SD_SCLK     36
-#define SD_CS       34
+#define SD_MISO     2
+#define SD_MOSI     15
+#define SD_SCLK     14
+#define SD_CS       13
+#define BUT1        4
+#define BUT2        19
+#define PIN_INPUT1 4
+#define PIN_INPUT2 19
 
 const char* id1="TP-LINK_CEC3";   //定义两个字符串指针常量
 const char* psw1="xxx123456";

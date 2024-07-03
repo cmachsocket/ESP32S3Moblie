@@ -3,7 +3,8 @@
 #include "xfont.h"
 #include <TFT_eSPI.h>
 #include <esp_pm.h>
-#include "driver/temp_sensor.h"
+#include <OneButton.h>
+//#include "driver/temp_sensor.h"
 #include<time.h>
 #include <WiFiUdp.h>
 #include<HTTPClient.h>
@@ -11,16 +12,14 @@
 #include <WiFi.h>
 #include<ArduinoJson.h>
 #include<Preferences.h>
-#include "bsec.h"
+//#include "bsec.h"
 #include <SD.h>
 #include <FS.h>
 #include <JPEGDecoder.h>
-Bsec iaqSensor;
-struct Button {
-    const uint8_t PIN;
-    uint32_t numberKeyPresses;
-    bool pressed;
-};
+
+//Bsec iaqSensor;
+OneButton button1(PIN_INPUT1,true,true);
+OneButton button2(PIN_INPUT2, true,true);
 TFT_eSPI tft = TFT_eSPI();
 SPIClass sdSPI;
 char pt1[20],pt2[20],pt3[20];
@@ -31,26 +30,25 @@ File txtfile,bookmark;
 XFont *_xFont;
 bool F=0,iswifi=0,nextpage=0,lastpage=0,thefirstenter=0;
 float it=0,tp=0,pre=0,hu=0,gas=0,hi=0,co2=0,iaq=0;
-int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0,isiaq=0;
+int tmpw=0,tmpw2=0,t5k=0,chosewin4=0,enterwin4=0,imagecnt=1,choseset=0,enterbook=0,bookchose=0,filecnt=0,stop=0,isiaq=0,doupress=0,sek=1;
 uint32_t lastpos=0,llpos=0;
 bool wincht,pagecht;
-Button button2 = {0, 0, false};
 WiFiUDP ntpUDP;
 NTPClient timeClient(ntpUDP, "ntp1.aliyun.com",60*60*8, 30*60*1000);
 struct tm* tmp;
 time_t tmp_time;
 Preferences prefs;
 char ptw[200]="";
-String wre="",hitoreceive="",files[20];
+String wre="",hitoreceive="",files[20],wrestr[20];
 void setup() {
-  Wire.begin(16,17);
-  Serial.begin(115200);
+  //Wire.begin(16,17);
   
+  Serial.begin(115200);
   tmp=new(tm);
-  pinMode(button2.PIN, INPUT_PULLUP);
-  attachInterrupt(button2.PIN, isr, FALLING);
-  touchAttachInterrupt(T14, winchange, THRESHOLD);
-  touchAttachInterrupt(T6, pagechage, THRESHOLD);
+  button1.attachClick(click1);
+  button1.attachDoubleClick(doubleclick1);
+  
+  button2.attachClick(click2);
   pinMode(TFT_BL,OUTPUT);
   digitalWrite(TFT_BL,HIGH);
   sdinit();
@@ -59,57 +57,38 @@ void setup() {
   ++bootCount;
   tft.fillScreen(TFT_BLACK);
   //tft.setRotation(1);
-  tft.setCursor(0, 0, 2);
   prefs.begin("mynamespace");
-  
-  if(bootCount==1){
-    tft.println(t5k);
-    change=millis();
-    while(1){
-      if (pagecht) {
-        t5k++;
-        t5k%=5;
-        tft.println(t5k);
-        change=millis();
-        pagecht = false;
-      }
-      if (wincht) {
-        wific=t5k;
-        if(t5k==4){
-          timeval tmpt=(timeval){prefs.getUInt("time"),0};
-          settimeofday(&tmpt,NULL);
-          break;
-        }
-        if(wificonnect()){
-          timeinit();
-          setweather();
-          wifidis();
-          wincht=false;
-          break;
-        }
-        else change=millis();
-        wincht=false;
-      }
-    }
-  }
+  checkinit();
   change=millis();
   tempininit();
-  bmeinit();
+  //bmeinit();
   get_time();
-  get_tp();
-  touchSleepWakeUpEnable(T13,THRESHOLD);
+  //get_tp();
+  
+  
   wre=prefs.getString("wre");
+  for(int i=0;i<wre.length();i++){
+    if(wre[i]=='\n'){
+      sek++;
+      continue;
+    }
+    wrestr[sek]+=wre[i];
+  }
+  gpio_hold_dis(GPIO_NUM_32);
   disply();
+  analogWrite(TFT_BL,backlight*25);
   Serial.println(change);
   prefs.putUInt("time",time(0));
   Serial.println(wre);
 
 }
 void loop() {
+  button1.tick();
+  button2.tick();
   // put your main code here, to run repeatedly:
-  if(iaqSensor.run()){
-    get_tp();
-  }
+  //if(iaqSensor.run()){
+    //get_tp();
+  //}
   if (millis() - changeTime > 10000) {
     changeTime = millis();
     get_time();
@@ -122,12 +101,13 @@ void loop() {
   if (turnoff and !enterbook and millis()-change > (turnoff*60)*1000 ) {
     Serial.println("Going to sleep now");
     prefs.putUInt("time",time(0));
-    //tft.fillScreen(TFT_BLACK);
-    analogWrite(TFT_BL,0);
-    showImage(0, 0, 135, 240, gp2);
-    analogWrite(TFT_BL,0);
-  
+    //
     wifidis();
+    analogWrite(TFT_BL,0);
+    tft.fillScreen(TFT_BLACK);
+    analogWrite(TFT_BL,0);
+    gpio_hold_en(GPIO_NUM_32);
+    touchSleepWakeUpEnable(T0,THRESHOLD);
     esp_deep_sleep_start();
   }
   if (wincht) {
@@ -192,7 +172,7 @@ void loop() {
         wific=(wific+1)%4;
       }
       else if(FLAG==1){
-        get_tp();
+        //get_tp();
         get_time();
       }
       else if(FLAG==2){
@@ -207,7 +187,7 @@ void loop() {
     change=millis();
     pagecht=false;
   }
-  if (button2.pressed) {
+  if (doupress) {
     if(!FLAG){
       if(!iswifi){
         wificonnect();
@@ -231,40 +211,75 @@ void loop() {
       disply();
     }
     change=millis();
-    button2.pressed=0;
+    doupress=0;
   }
 }
 //main
 
 
-void ARDUINO_ISR_ATTR isr() {
+void doubleclick1() {
   if(millis()-change<300){
     return ;
   }
-  button2.numberKeyPresses += 1;
-  button2.pressed = true;
+  doupress = true;
 }
-void winchange() {
-  if(millis()-change<300){
-    return ;
-  }
+void click1() {
+  Serial.println(">>");
   wincht = true;
 }
-void pagechage(){
-  if(millis()-change<300){
-     return ;
-  }
+void click2(){
+  Serial.println("LL");
   pagecht = true;
 }
 //buttons
+void checkinit(){
+  if(bootCount==1){
+    tft.setCursor(100, 20, 2);
+    tft.println(t5k);
+    change=millis();
+    while(1){
+      Serial.println(digitalRead(PIN_INPUT2));
+      button1.tick();
+      button2.tick();
+      
+      if (pagecht) {
+        t5k++;
+        t5k%=5;
+        tft.setCursor(100,tft.getCursorY());
+        tft.println(t5k);
+        change=millis();
+        pagecht = false;
+      }
+      if (wincht) {
+        wific=t5k;
+        tft.setCursor(100,tft.getCursorY());
+        if(t5k==4){
+          timeval tmpt=(timeval){prefs.getUInt("time"),0};
+          settimeofday(&tmpt,NULL);
+          break;
+        }
+        if(wificonnect()){
+          timeinit();
+          setweather();
+          wifidis();
+          wincht=false;
+          break;
+        }
+        else change=millis();
+        wincht=false;
+      }
+      delay(10);
+    }
+  }
+}
 
 void tempininit(){
-   temp_sensor_config_t temp_sensor = {
-    .dac_offset = TSENS_DAC_L2,
-    .clk_div = 6,
-  };
-  temp_sensor_set_config(temp_sensor);
-  temp_sensor_start();
+  //  temp_sensor_config_t temp_sensor = {
+  //   .dac_offset = TSENS_DAC_L2,
+  //   .clk_div = 6,
+  // };
+  // temp_sensor_set_config(temp_sensor);
+  // temp_sensor_start();
 }
 void sdinit(){
   pinMode(SD_CS,OUTPUT);
@@ -286,24 +301,24 @@ bool timeinit(){
   return 0;
 }
 void bmeinit(){
-  iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);
-  checkIaqSensorStatus();
-  bsec_virtual_sensor_t sensorList[13] = {
-    BSEC_OUTPUT_IAQ,
-    BSEC_OUTPUT_STATIC_IAQ,
-    BSEC_OUTPUT_CO2_EQUIVALENT,
-    BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
-    BSEC_OUTPUT_RAW_TEMPERATURE,
-    BSEC_OUTPUT_RAW_PRESSURE,
-    BSEC_OUTPUT_RAW_HUMIDITY,
-    BSEC_OUTPUT_RAW_GAS,
-    BSEC_OUTPUT_STABILIZATION_STATUS,
-    BSEC_OUTPUT_RUN_IN_STATUS,
-    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
-    BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
-    BSEC_OUTPUT_GAS_PERCENTAGE
-  };
-  iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
+  // iaqSensor.begin(BME68X_I2C_ADDR_HIGH, Wire);
+  // checkIaqSensorStatus();
+  // bsec_virtual_sensor_t sensorList[13] = {
+  //   BSEC_OUTPUT_IAQ,
+  //   BSEC_OUTPUT_STATIC_IAQ,
+  //   BSEC_OUTPUT_CO2_EQUIVALENT,
+  //   BSEC_OUTPUT_BREATH_VOC_EQUIVALENT,
+  //   BSEC_OUTPUT_RAW_TEMPERATURE,
+  //   BSEC_OUTPUT_RAW_PRESSURE,
+  //   BSEC_OUTPUT_RAW_HUMIDITY,
+  //   BSEC_OUTPUT_RAW_GAS,
+  //   BSEC_OUTPUT_STABILIZATION_STATUS,
+  //   BSEC_OUTPUT_RUN_IN_STATUS,
+  //   BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
+  //   BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_HUMIDITY,
+  //   BSEC_OUTPUT_GAS_PERCENTAGE
+  // };
+  // iaqSensor.updateSubscription(sensorList, 13, BSEC_SAMPLE_RATE_LP);
 }
 //init
 
@@ -400,16 +415,16 @@ inline void get_time() {
   Serial.printf("%s %s %s\n",pt1,pt2,pt3);
 }
 inline void get_tp(){
-  temp_sensor_read_celsius(&it);
+  //temp_sensor_read_celsius(&it);
   Serial.println(it);
-  tp=iaqSensor.temperature;
-  pre=iaqSensor.pressure/100.0;
-  hu=iaqSensor.humidity;
-  gas=iaqSensor.gasPercentage;
-  co2=iaqSensor.co2Equivalent;
-  isiaq=iaqSensor.iaqAccuracy;
-  iaq=iaqSensor.iaq;
-  hi=calAltitude(pre,tp);
+  // tp=iaqSensor.temperature;
+  // pre=iaqSensor.pressure/100.0;
+  // hu=iaqSensor.humidity;
+  // gas=iaqSensor.gasPercentage;
+  // co2=iaqSensor.co2Equivalent;
+  // isiaq=iaqSensor.iaqAccuracy;
+  // iaq=iaqSensor.iaq;
+  //hi=calAltitude(pre,tp);
 }
 inline float calAltitude(float atmospheric , float temprature){
  return  (1.0 - pow(atmospheric / SEALEVELPRESSURE_HPA, 0.1903))*(temprature+273.15)/0.0065;
@@ -424,71 +439,74 @@ inline void get_files(){
   }
 }
 inline void get_fre(int mhz){
-  esp_pm_config_esp32s3_t pmConfig;
+  esp_pm_config_esp32_t pmConfig;
   pmConfig.max_freq_mhz = mhz;  // 最大工作频率（MHz）
   pmConfig.min_freq_mhz = mhz;  // 最小工作频率（MHz）
-  pmConfig.light_sleep_enable = false;  // 启用轻度睡眠模式
+  pmConfig.light_sleep_enable = true;  // 启用轻度睡眠模式
   esp_pm_configure(&pmConfig);
 }
 //gets
 
 
 void window1(){
-  showImage(0, 0, 135, 240, gp2);
-  tft.setCursor(10, 209, 2);
+  tft.pushImage(0,0,240,240,gp2);
+  tft.setCursor(34, 190, 2);
   tft.setTextSize(1);
   tft.setTextColor(TFT_BLACK);
   tft.setTextDatum(CC_DATUM);
   tft.print(wific);
   tft.print(" ");
   tft.println(iswifi);
-  tft.setCursor(4, 220, 2);
+  tft.setCursor(27, 180, 2);
   tft.println(pt3);
 }
 void window2(){
-  showImage(0, 0, 135, 240, gp3);
+  tft.pushImage(0,0,240,240,gp3);
   tft.setTextColor(TFT_BLACK);
-  tft.setCursor(30, 0, 2);
+  tft.setCursor(85, 20, 2);
   tft.setTextSize(2);
   tft.println(pt1);
-  tft.setCursor(10,tft.getCursorY(),1);
+  tft.setCursor(60,tft.getCursorY(),1);
   tft.println(pt2);
 
-  tft.setCursor(3, 100, 6);
+  tft.setCursor(50, 130, 6);
   tft.setTextSize(1);
   tft.println(pt3);
 
-  tft.setCursor(3,170,2);
-  tft.setTextSize(1);
-  tft.printf("iT:%d*C sT:%.2f*C W:%d%% I:%d H:%dm G:%d%% P:%dhPa C:%dppm",int(it),tp,int(hu),int(isiaq ? iaq : 0 ),int(hi),int(gas),int(pre),int(co2));
+  //tft.setCursor(3,170,2);
+  //tft.setTextSize(1);
+  //tft.printf("iT:%d*C sT:%.2f*C W:%d%% I:%d H:%dm G:%d%% P:%dhPa C:%dppm",int(it),tp,int(hu),int(isiaq ? iaq : 0 ),int(hi),int(gas),int(pre),int(co2));
 }
 void window3(){
-  showImage(0, 0, 135, 240, gp3);
-  tft.setCursor(0, 0, 2);
+  tft.pushImage(0,0,240,240,gp3);
+  tft.setCursor(70, 20, 2);
   tft.setTextSize(1);
   tft.setTextColor(TFT_BLACK);
-  tft.print(wre);
+  for(int i=1;i<sek;i++){
+    tft.setCursor(50,tft.getCursorY(), 2);
+    tft.println(wrestr[i]);
+  }
 }
 void window4(){
-  showImage(0, 0, 135, 240, gp3);
+  tft.pushImage(0,0,240,240,gp3);
   tft.setTextColor(TFT_BLACK);
-  tft.setCursor(10,10,2);
+  tft.setCursor(70,10,2);
   tft.setTextSize(1);
   tft.println("watchPic");
 
-  tft.setCursor(10,30,2);
+  tft.setCursor(70,30,2);
   tft.setTextSize(1);
   tft.println("watchEbook");
 
-  tft.setCursor(10,50,2);
+  tft.setCursor(70,50,2);
   tft.setTextSize(1);
   tft.println("hitokoto");
 
-  tft.setCursor(10,70,2);
+  tft.setCursor(70,70,2);
   tft.setTextSize(1);
   tft.println("settings");
   
-  tft.setCursor(2,chosewin4*20+10,2);
+  tft.setCursor(62,chosewin4*20+10,2);
   tft.print("*");
   //_xFont->DrawChinese(10, 10, "业精于勤荒于嬉戏，行成于思毁于随。业精于勤荒于嬉戏，行成于思毁于随。业精于勤荒于嬉戏，行成于思毁于随。业精于勤荒于嬉戏，行成于思毁于随。", 0);
   //tft.print(_xFont->isInit);
@@ -536,34 +554,36 @@ void win4win2(){
   lastpage=nextpage=0;
 }
 void win4win3(){
-   showImage(0, 0, 135, 240, gp3);
-  _xFont->DrawStr(2, 10, hitoreceive, 0);
+   tft.pushImage(0,0,240,240,gp3);
+  _xFont->DrawStr(10, 100, hitoreceive, 0);
   
 }
 void win4win4(){
   tft.fillScreen(TFT_BLACK);
   tft.setTextColor(TFT_GREEN);
   
-  tft.setCursor(10,10,2);
+  tft.setCursor(70,10,2);
   tft.setTextSize(1);
   tft.println("backlight");
-  tft.setCursor(90,10,2);
+  tft.setCursor(150,10,2);
   tft.println(25*backlight);
 
-  tft.setCursor(10,30,2);
+  tft.setCursor(70,30,2);
   tft.setTextSize(1);
   tft.println("turnoff");
-  tft.setCursor(90,30,2);
+  tft.setCursor(150,30,2);
   tft.println(turnoff*60);
   
-  tft.setCursor(10,50,2);
+  tft.setCursor(70,50,2);
   tft.setTextSize(1);
   tft.println("restart");
 
-  tft.setCursor(2,choseset*20+10,2);
+  tft.setCursor(62,choseset*20+10,2);
   tft.print("*");
-  tft.setCursor(4, 209, 2);
-  tft.print("made by\ncmach_socket");
+  tft.setCursor(104, 160, 2);
+  tft.println("made by");
+  tft.setCursor(84, tft.getCursorY(), 2);
+  tft.println("cmach_socket");
 }
 void disply(){
   //tft.fillScreen(TFT_BLACK);
@@ -764,31 +784,4 @@ void jpegRender(int xpos, int ypos) {
   tft.setSwapBytes(swapBytes);
  
   
-}
-void checkIaqSensorStatus(void)
-{
-  String output;
-  if (iaqSensor.bsecStatus != BSEC_OK) {
-    if (iaqSensor.bsecStatus < BSEC_OK) {
-      output = "BSEC error code : " + String(iaqSensor.bsecStatus);
-      Serial.println(output);
-      for (;;);
-        //errLeds(); /* Halt in case of failure */
-    } else {
-      output = "BSEC warning code : " + String(iaqSensor.bsecStatus);
-      Serial.println(output);
-    }
-  }
-
-  if (iaqSensor.bme68xStatus != BME68X_OK) {
-    if (iaqSensor.bme68xStatus < BME68X_OK) {
-      output = "BME68X error code : " + String(iaqSensor.bme68xStatus);
-      Serial.println(output);
-      for (;;);
-        //errLeds(); /* Halt in case of failure */
-    } else {
-      output = "BME68X warning code : " + String(iaqSensor.bme68xStatus);
-      Serial.println(output);
-    }
-  }
 }

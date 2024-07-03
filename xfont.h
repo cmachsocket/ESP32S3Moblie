@@ -97,11 +97,11 @@ protected:
 
     // 注意：如果屏幕设置了不同的旋转方式，以下代码应该对应调整
 #ifdef ARDUINO_GFX
-    int screenHeight = 128;
+    int screenHeight = 168;
     int screenWidth = 160;
 #elif defined(TFT_ESPI)
-    int screenHeight = TFT_HEIGHT;
-    int screenWidth =  TFT_WIDTH;
+    int screenHeight = 168;
+    int screenWidth =  168;
 #endif
 
     // int screenHeight=128;

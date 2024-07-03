@@ -123,11 +123,11 @@ void loop() {
     Serial.println("Going to sleep now");
     prefs.putUInt("time",time(0));
     //tft.fillScreen(TFT_BLACK);
-    analogWrite(TFT_BL,0);
-    showImage(0, 0, 135, 240, gp2);
-    analogWrite(TFT_BL,0);
-  
     wifidis();
+    analogWrite(TFT_BL,0);
+    disply();
+    analogWrite(TFT_BL,0);
+    gpio_hold_en(GPIO_NUM_32);
     esp_deep_sleep_start();
   }
   if (wincht) {
